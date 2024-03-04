@@ -1,65 +1,57 @@
 import sys
 import re
 import os
-from glob import glob
+from time import sleep
 from alive_progress import alive_it
 from pathlib import Path
 
-ORIG = Path('D:\\TL Downloads\\TV Shows')
-
-def get_relevant_folders(keyword: str, all_folders: list[str]) -> list:
+def get_relevant_folders(orig_path: Path, keyword: str, all_folders: list[str]) -> list[Path]:
     return [
-        folder_path for folder_path in all_folders if \
-            folder_path.startswith('[One Pace]' and keyword in folder_path)
+        orig_path / folder_path for folder_path in all_folders if \
+            folder_path.startswith('[One Pace]') and keyword in folder_path
     ]
 
-def get_download_path() -> Path:
-    pass
+def move_files(abs_paths: list[Path], dest: Path, arc_key: str):
+    print("Moving files...")
+    sleep(1)
+    pattern = re.compile(r'{} (\d+)'.format(re.escape(arc_key)))
+    iterator = alive_it(abs_paths)
+    for folder in iterator:
+        files = [folder / file for file in os.listdir(folder)] # abs paths
+        for file in files:
+            group = pattern.findall(file.name)
+            if not group or len(group) > 1:
+                print(f'Problem with file in path:\n{file}')
+                continue
 
-def get_onepace_path() -> Path:
-    pass
+            number = group[0]
+            new_name = f'{arc_key} - {number}.mkv'
+            new_path = dest / new_name
 
-def move_files(abs_paths: list[Path], dest: Path):
-    pass
+            os.rename(file.as_posix(), new_path.as_posix())
 
-def onepace(orig_path: str):
-    pass
+def remove_folders(abs_paths: list[Path]):
+    print("Removing old files...")
+    sleep(1)
+    iterator = alive_it(abs_paths)
+    for folder in iterator:
+        os.rmdir(folder.as_posix())
 
-if __name__ == "__main__":
-    args = sys.argv[1:]
-    if len(args) != 1:
-        print("Usage: python3 copy_files.py <destination>")
-        sys.exit(1)
-    
-    name = args[0]
-    dest = ORIG / "One Pace" / name
+    print("ARIGATOOOOO")
 
-    pattern = r'\[One Pace\]\[(\d+-\d+)\] {} (\d+) \[\d{3,4}p\]\[[A-F0-9]+\]'.format(re.escape(name))
+def onepace(orig_path: Path, onepace_path: Path, arc_key: str):
+    all_folders = os.listdir(orig_path)
+    print("Getting relevant files...")
+    relevant_folders = get_relevant_folders(orig_path, arc_key, all_folders)
+    sleep(2)
 
-    folders = [{'path': f, 'match': re.match(pattern, f)}  for f in os.listdir(ORIG) if re.match(pattern, f)]
-    
-    if not folders:
+    if not relevant_folders:
         print(f"No folders found for {name}")
         sys.exit(1)
+    
+    onepace_path.mkdir(exist_ok=True)
+    arc_path = onepace_path / arc_key
+    arc_path.mkdir(exist_ok=True)
 
-    if not dest.exists():
-        dest.mkdir()
-
-    # move the mkv files to the destination
-    iterator = alive_it(folders)
-    for items in iterator:
-        files = os.listdir((ORIG / items['path']).as_posix())
-        _, number = items['match'].groups()
-        new_name = f'{name} - {number}.mkv'
-
-        if len(files) != 1:
-            continue
-
-        os.rename((ORIG / items['path'] / files[0]).as_posix(), (dest / new_name).as_posix())
-
-    # delete the empty folders
-    for items in folders:
-        os.rmdir((ORIG / items['path']).as_posix())
-
-    print(f"Moved {len(folders)} files to {dest}")
-    print("Enjoy")
+    move_files(relevant_folders, arc_path, arc_key)
+    remove_folders(relevant_folders)

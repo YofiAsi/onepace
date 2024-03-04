@@ -1,24 +1,28 @@
 import os
 import json
 import argparse
+from time import sleep
 from pathlib import Path
 from .onepace import onepace
 
-if os.name == 'posix':  # Linux or macOS
-    SETTINGS_DIR = os.path.expanduser('~/.config/onepace')
-elif os.name == 'nt':   # Windows
-    SETTINGS_DIR = os.path.join(os.getenv('APPDATA'), 'onepace')
-else:
-    raise OSError('Unsupported operating system')
+def get_config_path(create=False):
+    if os.name == 'posix':  # Linux or macOS
+        settings_dir = os.path.expanduser('~/.config/onepace')
+    elif os.name == 'nt':   # Windows
+        settings_dir = os.path.join(os.getenv('APPDATA'), 'onepace')
+    else:
+        raise OSError('Unsupported operating system')
 
-# Ensure the settings directory exists
-os.makedirs(SETTINGS_DIR, exist_ok=True)
-
-SETTINGS_FILE: Path = Path(os.path.join(SETTINGS_DIR, 'onepace.json'))
+    settings_dir = Path(settings_dir)
+    if create:
+        settings_dir.mkdir(exist_ok=True, parents=True)
+    settings_file = settings_dir / 'onepace.json'
+    return settings_file
 
 def check_initialized(func):
     def wrapper(*args, **kwargs):
-        if not SETTINGS_FILE.exists():
+        settings_file_path = get_config_path()
+        if not settings_file_path.exists():
             print("please use init command first")
             return
         
@@ -28,45 +32,53 @@ def check_initialized(func):
             print("Configure file is corrupted. use init command")
             return
         
-        return func(settings=settings)
+        kwargs['settings'] = settings
+        return func(*args, **kwargs)
     return wrapper
 
-# Function to save settings
 def save_settings(settings):
-    with open(SETTINGS_FILE, 'w') as f:
+    print('Saving...')
+    sleep(2)
+    settings_file = get_config_path()
+    with open(settings_file, 'w') as f:
         json.dump(settings, f, indent=4)
 
-# Function to load settings
+    print(f'Configurations file saved in:\n{settings_file}\n\nTodoooooot\n')
+
 def load_settings() -> dict:
-    if os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, 'r') as f:
+    settings_file = get_config_path()
+    if os.path.exists(settings_file):
+        with open(settings_file, 'r') as f:
             return json.load(f)
     return {}
 
 def init(*args, **kwargs):
     print("OKARISHIMASSSSS")
-    path = input('Enter path where torrent files are downloaded to: ')
+    path = Path(input('Enter path where torrent files are downloaded to: '))
 
-    if not os.path.exists(path):
+    if not path.exists():
         answer = input("Path given doesn't exists.. create it?  y/n  ")
         if answer != 'y':
             print("Abroting... ")
             return
     
     os.makedirs(path, exist_ok=True)
-    settings = {'path': path}  # Example, you can add more settings here
+    onepace_path = Path(path) / 'One Pace'
+
+    settings = {'path': path.as_posix(), 'onepace_path': onepace_path.as_posix()}
     save_settings(settings)
 
-    print(f'Configurations file saved in:\n{SETTINGS_FILE}\nTodoooooot')
-
 @check_initialized
-def fix_arc(settings):
+def fix_arc(*args, **kwargs):
+    settings = kwargs['settings']
+    args = kwargs['args']
+
     if settings is None:
         raise ValueError('settings not provided')
     downloads_path = settings.get('path')
-    # onepace(downloads_path)
-    print(f'hello!!')
-
+    onepace_path = settings.get('onepace_path')
+    
+    onepace(Path(downloads_path), Path(onepace_path), args.arc)
 
 def main():
     # Command-line argument parser
@@ -75,11 +87,11 @@ def main():
 
     # Initialization command
     init_parser = subparsers.add_parser('init', help='Initialize the module')
-    # init_parser.add_argument('path', help='Path argument for initialization')
     init_parser.set_defaults(func=init)
 
     # Command requiring initialization
-    command_parser = subparsers.add_parser('command', help='Your command')
+    command_parser = subparsers.add_parser('add-arc', help='move and rename episodes like a boss')
+    command_parser.add_argument('arc', help='arc name capitalized')
 
     # Associate function with the command
     command_parser.set_defaults(func=fix_arc)
@@ -87,6 +99,9 @@ def main():
     # Parse arguments and execute corresponding function
     args = parser.parse_args()
     if hasattr(args, 'func'):
-        args.func(args)
+        args.func(args=args)
     else:
         parser.print_help()
+
+if __name__ == "__main__":
+    main()
