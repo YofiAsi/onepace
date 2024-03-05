@@ -1,13 +1,13 @@
 # onepace
 
 install the package:
-$ pip setup.py develop
+`$ pip setup.py develop`
 or
-$ pip install .
+`$ pip install .`
 
 use the package:
-$ onepace -h
+`$ onepace -h`
 or
-$ onepace get-json
+`$ onepace get-json`
 or
-$ onepace init
+`$ onepace init`
