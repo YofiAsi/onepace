@@ -7,3 +7,5 @@ onepace.egg-info/PKG-INFO
 onepace.egg-info/requires.txt
 onepace.egg-info/SOURCES.txt
 onepace.egg-info/top_level.txt
+onepace/__pycache__/download_onepace.cpython-310.pyc
+requierments.txt

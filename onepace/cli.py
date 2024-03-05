@@ -4,6 +4,7 @@ import argparse
 from time import sleep
 from pathlib import Path
 from .onepace import onepace
+from .download_onepace import download_onepace_json
 
 def get_config_path(create=False):
     if os.name == 'posix':  # Linux or macOS
@@ -92,12 +93,15 @@ def main():
     # Command requiring initialization
     command_parser = subparsers.add_parser('add-arc', help='move and rename episodes like a boss')
     command_parser.add_argument('arc', help='arc name capitalized')
-
-    # Associate function with the command
     command_parser.set_defaults(func=fix_arc)
+
+    download_json_parser = subparsers.add_parser('json', help='download the episodes json (takes a while)')
+    download_json_parser.add_argument('path', help='json file path to save')
+    download_json_parser.set_defaults(func=download_onepace_json)
 
     # Parse arguments and execute corresponding function
     args = parser.parse_args()
+
     if hasattr(args, 'func'):
         args.func(args=args)
     else:

@@ -7,6 +7,8 @@ setuptools.setup(
     packages=['onepace'],
     install_requires=[
         'setuptools',
+        'beautifulsoup4',
+        'selenium',
     ],
     entry_points={
         'console_scripts': [
