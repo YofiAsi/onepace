@@ -95,7 +95,7 @@ def main():
     command_parser.add_argument('arc', help='arc name capitalized')
     command_parser.set_defaults(func=fix_arc)
 
-    download_json_parser = subparsers.add_parser('json', help='download the episodes json (takes a while)')
+    download_json_parser = subparsers.add_parser('get-json', help='download the episodes json (takes a while)')
     download_json_parser.add_argument('path', help='json file path to save')
     download_json_parser.set_defaults(func=download_onepace_json)
 
